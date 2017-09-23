@@ -318,7 +318,6 @@ public class AudioHandler extends CordovaPlugin {
     public void startPlayingAudio(String id, String file) {
         AudioPlayer audio = getOrCreatePlayer(id, file);
         audio.startPlaying(file);
-        getAudioFocus();
     }
 
     /**
@@ -352,6 +351,8 @@ public class AudioHandler extends CordovaPlugin {
         AudioPlayer audio = this.players.get(id);
         if (audio != null) {
             audio.stopPlaying();
+            AudioManager am = (AudioManager) this.cordova.getActivity().getSystemService(Context.AUDIO_SERVICE);
+            am.abandonAudioFocus(focusChangeListener); // release focus
         }
     }
 
@@ -441,8 +442,8 @@ public class AudioHandler extends CordovaPlugin {
 
         AudioManager am = (AudioManager) this.cordova.getActivity().getSystemService(Context.AUDIO_SERVICE);
         int result = am.requestAudioFocus(focusChangeListener,
-                                          AudioManager.STREAM_MUSIC,
-                                          AudioManager.AUDIOFOCUS_GAIN);
+                                          AudioManager.STREAM_NOTIFICATION,
+                                          AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK /*AudioManager.AUDIOFOCUS_GAIN*/);
 
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             LOG.e(TAG2,result + " instead of " + AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
@@ -488,8 +489,9 @@ public class AudioHandler extends CordovaPlugin {
     }
 
     private void onFirstPlayerCreated() {
+        getAudioFocus();
         origVolumeStream = cordova.getActivity().getVolumeControlStream();
-        cordova.getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        cordova.getActivity().setVolumeControlStream(AudioManager.STREAM_NOTIFICATION);
     }
 
     private void onLastPlayerReleased() {
